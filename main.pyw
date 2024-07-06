@@ -216,7 +216,7 @@ class Game:
                                     self.show_empty_tiles(x, y)
                                 if self.game_map[ya, xa] < 9:
                                     self.game_map[ya, xa] += 10
-                                if self.game_map[ya, xa] == 9:
+                                elif self.game_map[ya, xa] == 9:
                                     self.explode(xa, ya)
                         
                         elif len(hidden_neighbours) == self.game_map[y, x]-10-marks_len:
