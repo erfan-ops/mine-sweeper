@@ -17,7 +17,7 @@ from settings import *
 # has number: [11-18]
 # marked and mine: 19
 # marked but not mine: [20-28]
-
+# mines when lost: 29
 
 
 class Game:
@@ -25,15 +25,16 @@ class Game:
         if N_MINES > WIDTH*HEIGHT - 9:
             raise BaseException(f"can not have {N_MINES} mines with only {WIDTH*HEIGHT} tiles")
         pygame.init()
-        self.screen = pygame.display.set_mode((DISPLAY_W, DISPLAY_H+STATUS_BAR_HEIGHT))
+        self.screen: pygame.SurfaceType = pygame.display.set_mode((DISPLAY_W, DISPLAY_H+STATUS_BAR_HEIGHT))
         pygame.display.set_caption("Mine Sweeper by Erfan ;D")
         self.game_canvas = pygame.surface.Surface((DISPLAY_W, DISPLAY_H))
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(FONT_PATH, TILE_SIZE)
         self.status_font = pygame.font.Font(FONT_PATH, STATUS_BAR_HEIGHT)
         
-        self.mine_texture = pygame.transform.scale(pygame.image.load(MINE_PATH).convert_alpha(), (STATUS_BAR_HEIGHT, STATUS_BAR_HEIGHT))
-        self.flag_texture = pygame.transform.scale(pygame.image.load(FLAG_PATH).convert_alpha(), (TILE_SIZE, TILE_SIZE))
+        self.mine_texture: pygame.SurfaceType = pygame.transform.scale(pygame.image.load(MINE_PATH).convert_alpha(), (STATUS_BAR_HEIGHT, STATUS_BAR_HEIGHT))
+        self.flag_texture: pygame.SurfaceType = pygame.transform.scale(pygame.image.load(FLAG_PATH).convert_alpha(), (TILE_SIZE, TILE_SIZE))
+        self.small_mine_texture: pygame.SurfaceType = pygame.transform.scale(pygame.image.load(MINE_PATH).convert_alpha(), (TILE_SIZE, TILE_SIZE))
         pygame.display.set_icon(self.mine_texture)
         
         lpBuffer = wintypes.LPWSTR()
@@ -47,7 +48,7 @@ class Game:
         
         self.reset()
     
-    def check_events(self):
+    def check_events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.is_running = False
@@ -55,7 +56,7 @@ class Game:
                 if event.key == pygame.K_ESCAPE:
                     self.is_running = False
     
-    def check_reset(self):
+    def check_reset(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.is_running = False
@@ -66,7 +67,7 @@ class Game:
                     self.reset()
                     break
     
-    def render_map(self):
+    def render_map(self) -> None:
         self.screen.fill(STATUS_BAR_BG_COLOR)
         for y in range(HEIGHT):
             for x in range(WIDTH):
@@ -78,6 +79,10 @@ class Game:
                     pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
                     number_surface = self.font.render(str(self.game_map[y, x]-10), True, NUMBER_FG_TILE_COLOR)
                     self.game_canvas.blit(number_surface, (x*TILE_SIZE+XOFFSET, y*TILE_SIZE+YOFFSET))
+                elif self.game_map[y, x] == 29:
+                    color = MINE_BG_COLOR
+                    pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                    self.game_canvas.blit(self.small_mine_texture, (x*TILE_SIZE, y*TILE_SIZE))
                 elif self.game_map[y, x] > 18:
                     color = MARKED_TILE_COLOR
                     pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
@@ -90,7 +95,7 @@ class Game:
         remaining_mines_status = self.status_font.render(str(N_MINES - self.total_marked), True, MINES_STATUS_COLOR)
         self.screen.blit(remaining_mines_status, (DISPLAY_W//2+20, -20))
     
-    def show_empty_tiles(self, x: int, y: int):
+    def show_empty_tiles(self, x: int, y: int) -> None:
         if y < 0 or y > HEIGHT or x < 0 or x > WIDTH:
             return
         
@@ -105,7 +110,15 @@ class Game:
                     elif self.game_map[yi, xj] < 9:
                         self.game_map[yi, xj] += 10
     
-    def explode(self, x: int, y: int):
+    def explode(self, x: int, y: int) -> None:
+        for a in range(HEIGHT):
+            for b in range(WIDTH):
+                if self.game_map[a, b] < 9:
+                    self.game_map[a, b] += 10
+                elif self.game_map[a, b] == 9:
+                    self.game_map[a, b] = 29
+        self.render_map()
+        pygame.display.flip()
         x, y = x*TILE_SIZE, y*TILE_SIZE + STATUS_BAR_HEIGHT
         for i in range(7):
             self.check_events()
@@ -116,21 +129,21 @@ class Game:
             self.check_reset()
             self.clock.tick(10)
     
-    def reset(self):
+    def reset(self) -> None:
         self.game_map = np.zeros((HEIGHT, WIDTH), dtype=np.uint8)
-        self.true_marked = 0
-        self.total_marked = 0
-        self.is_running = True
-        self.is_reset = True
+        self.true_marked: int = 0
+        self.total_marked: int = 0
+        self.is_running: bool = True
+        self.is_reset: bool = True
         self.no_mine_area: list[tuple[int, int]] = []
         #-- wait for the first click --#
         while self.is_running:
             self.check_events()
             self.render_map()
             if pygame.mouse.get_pressed()[0]:
-                mouse_pos = pygame.mouse.get_pos()
-                mx = mouse_pos[0]//TILE_SIZE
-                my = (mouse_pos[1]-STATUS_BAR_HEIGHT)//TILE_SIZE
+                mouse_pos: tuple[int, int] = pygame.mouse.get_pos()
+                mx: int = mouse_pos[0]//TILE_SIZE
+                my: int = (mouse_pos[1]-STATUS_BAR_HEIGHT)//TILE_SIZE
                 for i in range(-1, 2):
                     for j in range(-1, 2):
                         yi = my+i
@@ -167,7 +180,7 @@ class Game:
         
         self.show_empty_tiles(mx, my)
     
-    def run(self):
+    def run(self) -> None:
         released = True
         while self.is_running:
             self.check_events()
@@ -185,11 +198,40 @@ class Game:
                     x = mouse_pos[0]//TILE_SIZE
                     if self.game_map[y, x] == 9:
                         self.explode(x, y)
+                    elif self.game_map[y, x] == 0 or self.game_map[y, x] == 10:
+                        self.game_map[y, x] = 10
+                        self.show_empty_tiles(x, y)
                     elif self.game_map[y, x] < 9:
                         self.game_map[y, x] += 10
-                    
-                    if self.game_map[y, x] == 10:
-                        self.show_empty_tiles(x, y)
+                    elif 10 < self.game_map[y, x] < 19:
+                        hidden_neighbours: set[tuple[int, int]] = set()
+                        marks: set[tuple[int, int]] = set()
+                        for i in range(-1, 2):
+                            for j in range(-1, 2):
+                                yi = y+i
+                                xj = x+j
+                                if 0 <= yi < HEIGHT and 0 <= xj < WIDTH:
+                                    if self.game_map[yi, xj] < 10:
+                                        hidden_neighbours.add((xj, yi))
+                                    elif 18 < self.game_map[yi, xj] < 29:
+                                        marks.add((xj, yi))
+                        marks_len = len(marks)
+                        if self.game_map[y, x]-10 == marks_len:
+                            for xa, ya in hidden_neighbours:
+                                if self.game_map[ya, xa] == 0:
+                                    self.show_empty_tiles(x, y)
+                                if self.game_map[ya, xa] < 9:
+                                    self.game_map[ya, xa] += 10
+                        
+                        elif len(hidden_neighbours) == self.game_map[y, x]-10-marks_len:
+                            for xa, ya in hidden_neighbours:
+                                if self.game_map[ya, xa] < 9:
+                                    self.game_map[ya, xa] += 20
+                                    self.total_marked += 1
+                                elif self.game_map[ya, xa] == 9:
+                                    self.total_marked += 1
+                                    self.true_marked += 1
+                                    self.game_map[ya, xa] = 19
                 
                 if mouse_press[2]:
                     released = False
@@ -235,11 +277,8 @@ class Game:
             self.clock.tick(TFPS)
 
 
-def start():
+if __name__ == "__main__":
     game = Game()
     game.run()
     pygame.quit()
     sys.exit()
-
-if __name__ == "__main__":
-    start()

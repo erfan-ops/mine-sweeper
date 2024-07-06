@@ -19,6 +19,7 @@
         "empty" : [255, 255, 180],
         "win-message": [20, 200, 4],
         "mines-remaining": [47, 50, 44],
-        "status-bar-bg": [127, 130, 124]
+        "status-bar-bg": [127, 130, 124],
+        "mine-bg": [140, 20, 4]
     }
 }
