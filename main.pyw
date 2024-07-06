@@ -127,6 +127,7 @@ class Game:
         while self.is_running and not self.is_reset:
             self.check_reset()
             self.clock.tick(10)
+        self.is_reset = False
     
     def reset(self) -> None:
         self.game_map = np.zeros((HEIGHT, WIDTH), dtype=np.uint8)
@@ -193,7 +194,6 @@ class Game:
                     x = mouse_pos[0]//TILE_SIZE
                     if self.game_map[y, x] == 9:
                         self.explode(x, y)
-                        self.is_reset = False
                     elif self.game_map[y, x] == 0 or self.game_map[y, x] == 10:
                         self.game_map[y, x] = 10
                         self.show_empty_tiles(x, y)
@@ -216,6 +216,8 @@ class Game:
                                     self.show_empty_tiles(x, y)
                                 if self.game_map[ya, xa] < 9:
                                     self.game_map[ya, xa] += 10
+                                if self.game_map[ya, xa] == 9:
+                                    self.explode(xa, ya)
                         
                         elif len(hidden_neighbours) == self.game_map[y, x]-10-marks_len:
                             for xa, ya in hidden_neighbours:
