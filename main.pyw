@@ -26,6 +26,7 @@ class Game:
             raise BaseException(f"can not have {N_MINES} mines with only {WIDTH*HEIGHT} tiles")
         pygame.init()
         self.screen = pygame.display.set_mode((DISPLAY_W, DISPLAY_H+STATUS_BAR_HEIGHT))
+        pygame.display.set_caption("Mine Sweeper by Erfan ;D")
         self.game_canvas = pygame.surface.Surface((DISPLAY_W, DISPLAY_H))
         self.clock = pygame.time.Clock()
         self.game_map = np.zeros((HEIGHT, WIDTH), dtype=np.uint8)
@@ -47,7 +48,7 @@ class Game:
         
         self.explode_animation: list[pygame.SurfaceType] = []
         for i in range(1, 8):
-            self.explode_animation.append(pygame.transform.scale(pygame.image.load(f"assets/{i}.png").convert_alpha(), (TILE_SIZE, TILE_SIZE)))
+            self.explode_animation.append(pygame.transform.scale(pygame.image.load(f"{ANIMATION_PATH}/{i}.png").convert_alpha(), (TILE_SIZE, TILE_SIZE)))
         
         #-- wait for the first click --#
         while self.is_running:
@@ -99,28 +100,38 @@ class Game:
                 if event.key == pygame.K_ESCAPE:
                     self.is_running = False
     
+    def check_reset(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.is_running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.is_running = False
+                elif event.key == pygame.K_r:
+                    self.reset()
+    
     def render_map(self):
-        self.screen.fill((127, 130, 124))
+        self.screen.fill(STATUS_BAR_BG_COLOR)
         for y in range(HEIGHT):
             for x in range(WIDTH):
                 if self.game_map[y, x] == 10:
-                    color = (255, 255, 180)
+                    color = EMPTY_TILE_COLOR
                     pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
                 elif 10 < self.game_map[y, x] < 19:
-                    color = (240, 255, 225)
+                    color = NUMBER_BG_TILE_COLOR
                     pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
-                    number_surface = self.font.render(str(self.game_map[y, x]-10), True, (47, 50, 44))
+                    number_surface = self.font.render(str(self.game_map[y, x]-10), True, NUMBER_FG_TILE_COLOR)
                     self.game_canvas.blit(number_surface, (x*TILE_SIZE+XOFFSET, y*TILE_SIZE+YOFFSET))
                 elif self.game_map[y, x] > 18:
-                    color = (60, 45, 40)
+                    color = MARKED_TILE_COLOR
                     pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
                     self.game_canvas.blit(self.flag_texture, (x*TILE_SIZE, y*TILE_SIZE))
                 else:
-                    color = (47, 50, 44)
+                    color = HIDDEN_TILE_COLOR
                     pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
         self.screen.blit(self.game_canvas, (0, STATUS_BAR_HEIGHT))
         self.screen.blit(self.mine_texture, (DISPLAY_W//2 - self.mine_texture.get_rect().w, 0))
-        remaining_mines_status = self.status_font.render(str(N_MINES - self.total_marked), True, (47, 50, 44))
+        remaining_mines_status = self.status_font.render(str(N_MINES - self.total_marked), True, MINES_STATUS_COLOR)
         self.screen.blit(remaining_mines_status, (DISPLAY_W//2+20, -20))
     
     def show_empty_tiles(self, x: int, y: int):
@@ -141,9 +152,17 @@ class Game:
     def explode(self, x: int, y: int):
         x, y = x*TILE_SIZE, y*TILE_SIZE + STATUS_BAR_HEIGHT
         for i in range(7):
+            self.check_events()
             self.screen.blit(self.explode_animation[i], (x, y))
             pygame.display.update(x, y, TILE_SIZE, TILE_SIZE)
-            self.clock.tick(12)
+            self.clock.tick(ANIMATION_SPEED)
+        while self.is_running:
+            self.check_reset()
+            self.clock.tick(10)
+    
+    def reset(self):
+        pygame.quit()
+        start()
     
     def run(self):
         released = True
@@ -163,7 +182,6 @@ class Game:
                     x = mouse_pos[0]//TILE_SIZE
                     if self.game_map[y, x] == 9:
                         self.explode(x, y)
-                        self.is_running = False
                     elif self.game_map[y, x] < 9:
                         self.game_map[y, x] += 10
                     
@@ -194,15 +212,28 @@ class Game:
                         self.total_marked -= 1
             
             if self.true_marked == N_MINES == self.total_marked:
-                print("you won!")
-                self.is_running = False
+                for y in range(HEIGHT):
+                    for x in range(WIDTH):
+                        if self.game_map[y, x] < 9:
+                            self.game_map[y, x] += 10
+                self.render_map()
+                win_text = self.status_font.render("YOU WON!", True, WIN_MES_COLOR)
+                win_text_rect = win_text.get_rect()
+                self.screen.blit(win_text, (DISPLAY_W//2-win_text_rect.w//2, DISPLAY_H//2-win_text_rect.h//2))
+                pygame.display.flip()
+                while self.is_running:
+                    self.check_reset()
+                    self.clock.tick(10)
             
             pygame.display.flip()
             self.clock.tick(TFPS)
 
 
-if __name__ == "__main__":
+def start():
     game = Game()
     game.run()
     pygame.quit()
     sys.exit()
+
+if __name__ == "__main__":
+    start()
