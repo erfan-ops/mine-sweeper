@@ -36,6 +36,7 @@ class Game:
         self.is_running = True
         
         self.mine_texture = pygame.transform.scale(pygame.image.load(MINE_PATH).convert_alpha(), (STATUS_BAR_HEIGHT, STATUS_BAR_HEIGHT))
+        self.flag_texture = pygame.transform.scale(pygame.image.load(FLAG_PATH).convert_alpha(), (TILE_SIZE, TILE_SIZE))
         pygame.display.set_icon(self.mine_texture)
         self.no_mine_area: list[tuple[int, int]] = []
         
@@ -95,24 +96,27 @@ class Game:
                     self.is_running = False
     
     def render_map(self):
-        self.screen.fill((27, 30, 24))
+        self.screen.fill((127, 130, 124))
         for y in range(HEIGHT):
             for x in range(WIDTH):
                 if self.game_map[y, x] == 10:
                     color = (255, 255, 180)
+                    pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
                 elif 10 < self.game_map[y, x] < 19:
                     color = (240, 255, 225)
-                elif self.game_map[y, x] > 18:
-                    color = (170, 40, 4)
-                else:
-                    color = (47, 50, 44)
-                pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
-                if 10 < self.game_map[y, x] < 19:
+                    pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
                     number_surface = self.font.render(str(self.game_map[y, x]-10), True, (47, 50, 44))
                     self.game_canvas.blit(number_surface, (x*TILE_SIZE+XOFFSET, y*TILE_SIZE+YOFFSET))
+                elif self.game_map[y, x] > 18:
+                    color = (60, 45, 40)
+                    pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                    self.game_canvas.blit(self.flag_texture, (x*TILE_SIZE, y*TILE_SIZE))
+                else:
+                    color = (47, 50, 44)
+                    pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
         self.screen.blit(self.game_canvas, (0, STATUS_BAR_HEIGHT))
         self.screen.blit(self.mine_texture, (DISPLAY_W//2 - self.mine_texture.get_rect().w, 0))
-        remaining_mines_status = self.status_font.render(str(N_MINES - self.total_marked), True, (127, 130, 124))
+        remaining_mines_status = self.status_font.render(str(N_MINES - self.total_marked), True, (47, 50, 44))
         self.screen.blit(remaining_mines_status, (DISPLAY_W//2+20, -20))
     
     def show_empty_tiles(self, x, y):

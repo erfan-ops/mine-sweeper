@@ -3,4 +3,6 @@ version_setup.py
 versionfile.txt
 venv
 mine-sweeper-win
+mine-sweeper-win.zip
+mine-sweeper-win.7z
 __pycache__
