@@ -47,6 +47,7 @@ class Game:
             self.explode_animation.append(pygame.transform.scale(pygame.image.load(f"{ANIMATION_PATH}/{i}.png").convert_alpha(), (TILE_SIZE, TILE_SIZE)))
         
         self.reset()
+        self.is_reset = False
     
     def check_events(self) -> None:
         for event in pygame.event.get():
@@ -99,16 +100,14 @@ class Game:
         if y < 0 or y > HEIGHT or x < 0 or x > WIDTH:
             return
         
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                yi = y+i
-                xj = x+j
-                if 0 <= yi < HEIGHT and 0 <= xj < WIDTH:
-                    if self.game_map[yi, xj] == 0:
-                        self.game_map[yi, xj] = 10
-                        self.show_empty_tiles(xj, yi)
-                    elif self.game_map[yi, xj] < 9:
-                        self.game_map[yi, xj] += 10
+        for i in range(y-1, y+2):
+            for j in range(x-1, x+2):
+                if 0 <= i < HEIGHT and 0 <= j < WIDTH:
+                    if self.game_map[i, j] == 0:
+                        self.game_map[i, j] = 10
+                        self.show_empty_tiles(j, i)
+                    elif self.game_map[i, j] < 9:
+                        self.game_map[i, j] += 10
     
     def explode(self, x: int, y: int) -> None:
         for a in range(HEIGHT):
@@ -125,7 +124,7 @@ class Game:
             self.screen.blit(self.explode_animation[i], (x, y))
             pygame.display.update(x, y, TILE_SIZE, TILE_SIZE)
             self.clock.tick(ANIMATION_SPEED)
-        while self.is_running:
+        while self.is_running and not self.is_reset:
             self.check_reset()
             self.clock.tick(10)
     
@@ -144,13 +143,11 @@ class Game:
                 mouse_pos: tuple[int, int] = pygame.mouse.get_pos()
                 mx: int = mouse_pos[0]//TILE_SIZE
                 my: int = (mouse_pos[1]-STATUS_BAR_HEIGHT)//TILE_SIZE
-                for i in range(-1, 2):
-                    for j in range(-1, 2):
-                        yi = my+i
-                        xj = mx+j
-                        if 0 <= yi < HEIGHT and 0 <= xj < WIDTH:
-                            self.no_mine_area.append((xj, yi))
-                            self.game_map[yi, xj] = 0
+                for i in range(my-1, my+2):
+                    for j in range(mx-1, mx+2):
+                        if 0 <= i < HEIGHT and 0 <= j < WIDTH:
+                            self.no_mine_area.append((j, i))
+                            self.game_map[i, j] = 0
                 break
             pygame.display.flip()
             self.clock.tick(12)
@@ -169,12 +166,10 @@ class Game:
             for x in range(WIDTH):
                 if self.game_map[y, x] == 0:
                     total_neighbour_mines = 0
-                    for i in range(-1, 2):
-                        for j in range(-1, 2):
-                            yi = y+i
-                            xj = x+j
-                            if 0 <= yi < HEIGHT and 0 <= xj < WIDTH:
-                                if self.game_map[yi, xj] == 9:
+                    for i in range(y-1, y+2):
+                        for j in range(x-1, x+2):
+                            if 0 <= i < HEIGHT and 0 <= j < WIDTH:
+                                if self.game_map[i, j] == 9:
                                     total_neighbour_mines += 1
                     self.game_map[y, x] = total_neighbour_mines
         
@@ -198,6 +193,7 @@ class Game:
                     x = mouse_pos[0]//TILE_SIZE
                     if self.game_map[y, x] == 9:
                         self.explode(x, y)
+                        self.is_reset = False
                     elif self.game_map[y, x] == 0 or self.game_map[y, x] == 10:
                         self.game_map[y, x] = 10
                         self.show_empty_tiles(x, y)
@@ -206,15 +202,13 @@ class Game:
                     elif 10 < self.game_map[y, x] < 19:
                         hidden_neighbours: set[tuple[int, int]] = set()
                         marks: set[tuple[int, int]] = set()
-                        for i in range(-1, 2):
-                            for j in range(-1, 2):
-                                yi = y+i
-                                xj = x+j
-                                if 0 <= yi < HEIGHT and 0 <= xj < WIDTH:
-                                    if self.game_map[yi, xj] < 10:
-                                        hidden_neighbours.add((xj, yi))
-                                    elif 18 < self.game_map[yi, xj] < 29:
-                                        marks.add((xj, yi))
+                        for i in range(y-1, y+2):
+                            for j in range(x-1, x+2):
+                                if 0 <= i < HEIGHT and 0 <= j < WIDTH:
+                                    if self.game_map[i, j] < 10:
+                                        hidden_neighbours.add((j, i))
+                                    elif 18 < self.game_map[i, j] < 29:
+                                        marks.add((j, i))
                         marks_len = len(marks)
                         if self.game_map[y, x]-10 == marks_len:
                             for xa, ya in hidden_neighbours:
