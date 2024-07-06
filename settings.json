@@ -8,5 +8,6 @@
     "numbers-y-offset": -8,
     "font-path": "fonts/Kablammo-Regular-VariableFont_MORF.ttf",
     "mine-path": "assets/mine.png",
-    "flag-path": "assets/flag.png"
+    "flag-path": "assets/flag.png",
+    "explode-animation-speed": 12
 }

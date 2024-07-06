@@ -45,6 +45,10 @@ class Game:
         AppUserModelID(ctypes.cast(ctypes.byref(lpBuffer), wintypes.LPWSTR))
         ctypes.windll.kernel32.LocalFree(lpBuffer)
         
+        self.explode_animation: list[pygame.SurfaceType] = []
+        for i in range(1, 8):
+            self.explode_animation.append(pygame.transform.scale(pygame.image.load(f"assets/{i}.png").convert_alpha(), (TILE_SIZE, TILE_SIZE)))
+        
         #-- wait for the first click --#
         while self.is_running:
             self.check_events()
@@ -119,7 +123,7 @@ class Game:
         remaining_mines_status = self.status_font.render(str(N_MINES - self.total_marked), True, (47, 50, 44))
         self.screen.blit(remaining_mines_status, (DISPLAY_W//2+20, -20))
     
-    def show_empty_tiles(self, x, y):
+    def show_empty_tiles(self, x: int, y: int):
         if y < 0 or y > HEIGHT or x < 0 or x > WIDTH:
             return
         
@@ -133,6 +137,13 @@ class Game:
                         self.show_empty_tiles(xj, yi)
                     elif self.game_map[yi, xj] < 9:
                         self.game_map[yi, xj] += 10
+    
+    def explode(self, x: int, y: int):
+        x, y = x*TILE_SIZE, y*TILE_SIZE + STATUS_BAR_HEIGHT
+        for i in range(7):
+            self.screen.blit(self.explode_animation[i], (x, y))
+            pygame.display.update(x, y, TILE_SIZE, TILE_SIZE)
+            self.clock.tick(12)
     
     def run(self):
         released = True
@@ -151,7 +162,7 @@ class Game:
                     y = (mouse_pos[1]-STATUS_BAR_HEIGHT)//TILE_SIZE
                     x = mouse_pos[0]//TILE_SIZE
                     if self.game_map[y, x] == 9:
-                        print("game over!")
+                        self.explode(x, y)
                         self.is_running = False
                     elif self.game_map[y, x] < 9:
                         self.game_map[y, x] += 10

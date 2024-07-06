@@ -14,4 +14,5 @@ YOFFSET: int = SETTINGS["numbers-y-offset"]
 FONT_PATH: str = SETTINGS["font-path"]
 MINE_PATH: str = SETTINGS["mine-path"]
 FLAG_PATH: str = SETTINGS["flag-path"]
+ANIMATION_SPEED: int = SETTINGS["explode-animation-speed"]
 STATUS_BAR_HEIGHT = 100
