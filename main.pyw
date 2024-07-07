@@ -35,7 +35,7 @@ class Game:
         
         self.mine_texture: pygame.SurfaceType = pygame.transform.scale(pygame.image.load(MINE_PATH).convert_alpha(), (STATUS_BAR_HEIGHT, STATUS_BAR_HEIGHT))
         self.flag_texture: pygame.SurfaceType = pygame.transform.scale(pygame.image.load(FLAG_PATH).convert_alpha(), (TILE_SIZE, TILE_SIZE))
-        self.small_mine_texture: pygame.SurfaceType = pygame.transform.scale(pygame.image.load(MINE_PATH).convert_alpha(), (TILE_SIZE, TILE_SIZE))
+        self.small_mine_texture: pygame.SurfaceType = pygame.transform.scale(self.mine_texture, (TILE_SIZE, TILE_SIZE))
         pygame.display.set_icon(self.mine_texture)
         
         lpBuffer = wintypes.LPWSTR()
@@ -96,7 +96,7 @@ class Game:
         self.screen.blit(self.mine_texture, (DISPLAY_W//2 - self.mine_texture.get_rect().w, 0))
         remaining_mines_status = self.status_font.render(str(N_MINES - self.total_marked), True, MINES_STATUS_COLOR)
         self.screen.blit(remaining_mines_status, (DISPLAY_W//2+20, -20))
-        timer_status = self.font.render("time: %d"%time, True, TIMER_STATUS_COLOR)
+        timer_status = self.font.render("time: %d s"%time, True, TIMER_STATUS_COLOR)
         self.screen.blit(timer_status, (8, -2))
     
     def show_empty_tiles(self, x: int, y: int) -> None:
@@ -155,6 +155,8 @@ class Game:
                 break
             pygame.display.flip()
             self.clock.tick(12)
+        if not self.is_running:
+            return
         #-- assign numbers to tiles --#
         #- mines -#
         for _ in range(N_MINES):
@@ -172,9 +174,8 @@ class Game:
                     total_neighbour_mines = 0
                     for i in range(y-1, y+2):
                         for j in range(x-1, x+2):
-                            if 0 <= i < HEIGHT and 0 <= j < WIDTH:
-                                if self.game_map[i, j] == 9:
-                                    total_neighbour_mines += 1
+                            if 0 <= i < HEIGHT and 0 <= j < WIDTH and self.game_map[i, j] == 9:
+                                total_neighbour_mines += 1
                     self.game_map[y, x] = total_neighbour_mines
         
         self.show_empty_tiles(mx, my)
@@ -262,7 +263,7 @@ class Game:
                     for x in range(WIDTH):
                         if self.game_map[y, x] < 9:
                             self.game_map[y, x] += 10
-                self.render_map()
+                self.render_map(perf_counter() - self.start_time)
                 win_text = self.status_font.render("YOU WON!", True, WIN_MES_COLOR)
                 win_text_rect = win_text.get_rect()
                 self.screen.blit(win_text, (DISPLAY_W//2-win_text_rect.w//2, DISPLAY_H//2-win_text_rect.h//2))

@@ -15,7 +15,7 @@ FONT_PATH: str = SETTINGS["font-path"]
 MINE_PATH: str = SETTINGS["mine-path"]
 FLAG_PATH: str = SETTINGS["flag-path"]
 ANIMATION_PATH: str = SETTINGS["animation-path"]
-ANIMATION_PATH.strip("/\\")
+ANIMATION_PATH = ANIMATION_PATH.strip("/\\")
 ANIMATION_SPEED: float = SETTINGS["explode-animation-speed"]
 STATUS_BAR_HEIGHT = 100
 
