@@ -26,5 +26,8 @@ NUMBER_FG_TILE_COLOR: tuple[int, int, int] = tuple(SETTINGS["colors"]["number-fg
 EMPTY_TILE_COLOR: tuple[int, int, int] = tuple(SETTINGS["colors"]["empty"])
 WIN_MES_COLOR: tuple[int, int, int] = tuple(SETTINGS["colors"]["win-message"])
 MINES_STATUS_COLOR: tuple[int, int, int] = tuple(SETTINGS["colors"]["mines-remaining"])
+TIMER_STATUS_COLOR: tuple[int, int, int] = tuple(SETTINGS["colors"]["timer"])
 STATUS_BAR_BG_COLOR: tuple[int, int, int] = tuple(SETTINGS["colors"]["status-bar-bg"])
 MINE_BG_COLOR: tuple[int, int, int] = tuple(SETTINGS["colors"]["mine-bg"])
+
+DO_SMART_CLICK: bool = SETTINGS["smart-click"]

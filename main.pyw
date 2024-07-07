@@ -4,6 +4,7 @@ import numpy as np
 from random import randint
 import ctypes
 from ctypes import wintypes
+from time import perf_counter
 from settings import *
 
 
@@ -48,6 +49,7 @@ class Game:
         
         self.reset()
         self.is_reset = False
+        self.start_time = perf_counter()
     
     def check_events(self) -> None:
         for event in pygame.event.get():
@@ -68,7 +70,7 @@ class Game:
                     self.reset()
                     break
     
-    def render_map(self) -> None:
+    def render_map(self, time: float=0) -> None:
         self.screen.fill(STATUS_BAR_BG_COLOR)
         for y in range(HEIGHT):
             for x in range(WIDTH):
@@ -95,6 +97,8 @@ class Game:
         self.screen.blit(self.mine_texture, (DISPLAY_W//2 - self.mine_texture.get_rect().w, 0))
         remaining_mines_status = self.status_font.render(str(N_MINES - self.total_marked), True, MINES_STATUS_COLOR)
         self.screen.blit(remaining_mines_status, (DISPLAY_W//2+20, -20))
+        timer_status = self.font.render("time: %d"%time, True, TIMER_STATUS_COLOR)
+        self.screen.blit(timer_status, (8, -2))
     
     def show_empty_tiles(self, x: int, y: int) -> None:
         if y < 0 or y > HEIGHT or x < 0 or x > WIDTH:
@@ -139,7 +143,7 @@ class Game:
         #-- wait for the first click --#
         while self.is_running:
             self.check_events()
-            self.render_map()
+            self.render_map(0)
             if pygame.mouse.get_pressed()[0]:
                 mouse_pos: tuple[int, int] = pygame.mouse.get_pos()
                 mx: int = mouse_pos[0]//TILE_SIZE
@@ -180,7 +184,7 @@ class Game:
         released = True
         while self.is_running:
             self.check_events()
-            self.render_map()
+            self.render_map(perf_counter() - self.start_time)
             
             mouse_press = pygame.mouse.get_pressed()
             if not mouse_press[0] and not mouse_press[2]:
@@ -199,7 +203,7 @@ class Game:
                         self.show_empty_tiles(x, y)
                     elif self.game_map[y, x] < 9:
                         self.game_map[y, x] += 10
-                    elif 10 < self.game_map[y, x] < 19:
+                    elif DO_SMART_CLICK and 10 < self.game_map[y, x] < 19:
                         hidden_neighbours: set[tuple[int, int]] = set()
                         marks: set[tuple[int, int]] = set()
                         for i in range(y-1, y+2):
@@ -221,25 +225,26 @@ class Game:
                         
                         elif len(hidden_neighbours) == self.game_map[y, x]-10-marks_len:
                             for xa, ya in hidden_neighbours:
-                                if self.game_map[ya, xa] < 9:
-                                    self.game_map[ya, xa] += 20
-                                    self.total_marked += 1
-                                elif self.game_map[ya, xa] == 9:
-                                    self.total_marked += 1
-                                    self.true_marked += 1
-                                    self.game_map[ya, xa] = 19
+                                if self.total_marked != N_MINES:
+                                    if self.game_map[ya, xa] < 9:
+                                        self.game_map[ya, xa] += 20
+                                        self.total_marked += 1
+                                    elif self.game_map[ya, xa] == 9:
+                                        self.total_marked += 1
+                                        self.true_marked += 1
+                                        self.game_map[ya, xa] = 19
                 
                 if mouse_press[2]:
                     released = False
                     mouse_pos = pygame.mouse.get_pos()
                     y = (mouse_pos[1]-STATUS_BAR_HEIGHT)//TILE_SIZE
                     x = mouse_pos[0]//TILE_SIZE
-                    if self.game_map[y, x] == 9:
+                    if self.game_map[y, x] == 9 and self.total_marked != N_MINES:
                         self.game_map[y, x] = 19
                         self.true_marked += 1
                         self.total_marked += 1
                     
-                    elif self.game_map[y, x] < 9:
+                    elif self.game_map[y, x] < 9 and self.total_marked != N_MINES:
                         self.game_map[y, x] += 20
                         self.total_marked += 1
                     

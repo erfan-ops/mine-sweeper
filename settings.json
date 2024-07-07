@@ -11,6 +11,7 @@
     "flag-path": "assets/flag.png",
     "animation-path": "assets",
     "explode-animation-speed": 8,
+    "smart-click": true,
     "colors": {
         "hidden": [47, 50, 44],
         "marked": [60, 45, 40],
@@ -19,6 +20,7 @@
         "empty" : [255, 255, 180],
         "win-message": [20, 200, 4],
         "mines-remaining": [47, 50, 44],
+        "timer": [47, 50, 44],
         "status-bar-bg": [127, 130, 124],
         "mine-bg": [140, 20, 4]
     }
