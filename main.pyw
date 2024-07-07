@@ -49,7 +49,6 @@ class Game:
         
         self.reset()
         self.is_reset = False
-        self.start_time = perf_counter()
     
     def check_events(self) -> None:
         for event in pygame.event.get():
@@ -120,7 +119,7 @@ class Game:
                     self.game_map[a, b] += 10
                 elif self.game_map[a, b] == 9:
                     self.game_map[a, b] = 29
-        self.render_map()
+        self.render_map(perf_counter() - self.start_time)
         pygame.display.flip()
         x, y = x*TILE_SIZE, y*TILE_SIZE + STATUS_BAR_HEIGHT
         for i in range(7):
@@ -179,6 +178,7 @@ class Game:
                     self.game_map[y, x] = total_neighbour_mines
         
         self.show_empty_tiles(mx, my)
+        self.start_time = perf_counter()
     
     def run(self) -> None:
         released = True
