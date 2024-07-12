@@ -61,6 +61,8 @@ class Game:
         if y > crop_distance[1]: y = crop_distance[1]
         cropped_region = x, y , DISPLAY_W - crop_distance[0], GAME_CANVAS_DISPLAY_H - crop_distance[1]
         self.subsurface_game_canvas = self.game_canvas.subsurface(cropped_region)
+        self.some_pos[0] = x + self.delta_mouse_pos[0]
+        self.some_pos[1] = y + self.delta_mouse_pos[1]
     
     def _canvas_stuff(self):
         if self.some_pos[0] < 0: self.some_pos[0] = 0
@@ -95,7 +97,6 @@ class Game:
                         self.some_pos[0] += updated_x
                         self.some_pos[1] += updated_y
                         self.zoom += ZOOM_MULTPLIER
-                        self.zoom_level += 1
                         self._canvas_stuff()
                 
                 elif event.button == 5 and self.zoom > 0:
@@ -109,7 +110,6 @@ class Game:
                     self.some_pos[0] += updated_x
                     self.some_pos[1] += updated_y
                     self.zoom -= ZOOM_MULTPLIER
-                    self.zoom_level -= 1
                     self._canvas_stuff()
             
             elif event.type == pygame.MOUSEBUTTONUP:
@@ -120,7 +120,6 @@ class Game:
                     self.origin_mouse_pos = (0, 0)
                     self.current_mouse_pos = (0, 0)
                     self.delta_mouse_pos = (0, 0)
-                
     
     def check_reset(self) -> None:
         for event in pygame.event.get():
@@ -211,7 +210,6 @@ class Game:
         self.held_middle: bool = False
         self.no_mine_area: list[tuple[int, int]] = []
         self.zoom = 0
-        self.zoom_level = 0
         self.some_pos = [0, 0]
         self.origin_mouse_pos: tuple[int, int] = (0, 0)
         self.delta_mouse_pos: tuple[int, int] = (0, 0)
@@ -326,7 +324,7 @@ class Game:
                 if mouse_press[2]:
                     released = False
                     mouse_pos = pygame.mouse.get_pos()
-                    x = int( ((mouse_pos[0] / DISPLAY_W) * self.subsurface_game_canvas.get_width()  + self.some_pos[0]) / TILE_SIZE )
+                    x = int( (( mouse_pos[0]                      / DISPLAY_W            ) * self.subsurface_game_canvas.get_width()  + self.some_pos[0]) / TILE_SIZE )
                     y = int( (((mouse_pos[1] - STATUS_BAR_HEIGHT) / GAME_CANVAS_DISPLAY_H) * self.subsurface_game_canvas.get_height() + self.some_pos[1]) / TILE_SIZE )
                     if self.game_map[y, x] == 9 and self.total_marked != N_MINES:
                         self.game_map[y, x] = 19
