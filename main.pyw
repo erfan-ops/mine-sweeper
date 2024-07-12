@@ -26,9 +26,10 @@ class Game:
         if N_MINES > WIDTH*HEIGHT - 9:
             raise BaseException(f"can not have {N_MINES} mines with only {WIDTH*HEIGHT} tiles")
         pygame.init()
-        self.screen: pygame.SurfaceType = pygame.display.set_mode((DISPLAY_W, DISPLAY_H+STATUS_BAR_HEIGHT))
+        self.screen: pygame.SurfaceType = pygame.display.set_mode((DISPLAY_W, DISPLAY_H))
         pygame.display.set_caption("Mine Sweeper by Erfan ;D")
-        self.game_canvas = pygame.surface.Surface((DISPLAY_W, DISPLAY_H))
+        self.game_canvas = pygame.surface.Surface((DISPLAY_W, GAME_CANVAS_DISPLAY_H))
+        self.subsurface_game_canvas = self.game_canvas
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(FONT_PATH, TILE_SIZE)
         self.status_font = pygame.font.Font(FONT_PATH, STATUS_BAR_HEIGHT)
@@ -50,6 +51,24 @@ class Game:
         self.reset()
         self.is_reset = False
     
+    def _zoom_stuff(self):
+        x = self.some_pos[0] - self.delta_mouse_pos[0]
+        y = self.some_pos[1] - self.delta_mouse_pos[1]
+        crop_distance = self.zoom * ASPECT_RATIO[0], self.zoom * ASPECT_RATIO[1]
+        if x < 0: x = 0
+        if y < 0: y = 0
+        if x > crop_distance[0]: x = crop_distance[0]
+        if y > crop_distance[1]: y = crop_distance[1]
+        cropped_region = x, y , DISPLAY_W - crop_distance[0], GAME_CANVAS_DISPLAY_H - crop_distance[1]
+        self.subsurface_game_canvas = self.game_canvas.subsurface(cropped_region)
+    
+    def _canvas_stuff(self):
+        if self.some_pos[0] < 0: self.some_pos[0] = 0
+        elif self.some_pos[0] >= DISPLAY_W: self.some_pos[0] = DISPLAY_W-1
+        if self.some_pos[1] < 0: self.some_pos[1] = 0
+        elif self.some_pos[1] >= GAME_CANVAS_DISPLAY_H: self.some_pos[1] = GAME_CANVAS_DISPLAY_H-1
+        self._zoom_stuff()
+    
     def check_events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -57,6 +76,51 @@ class Game:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.is_running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.pos[1] - STATUS_BAR_HEIGHT >= 0:
+                if event.button == 2:
+                    self.held_middle = True
+                    self.origin_mouse_pos = event.pos
+                    self.current_mouse_pos = event.pos
+                    self.delta_mouse_pos = (0, 0)
+                
+                elif event.button == 4 and self.zoom < ZOOM_LIMIT:
+                    this_crop_distance =  self.zoom                   * ASPECT_RATIO[0],  self.zoom                   * ASPECT_RATIO[1]
+                    next_crop_distance = (self.zoom + ZOOM_MULTPLIER) * ASPECT_RATIO[0], (self.zoom + ZOOM_MULTPLIER) * ASPECT_RATIO[1]
+                    this_zoom_resolution = DISPLAY_W - this_crop_distance[0], GAME_CANVAS_DISPLAY_H - this_crop_distance[1]
+                    next_zoom_resolution = DISPLAY_W - next_crop_distance[0], GAME_CANVAS_DISPLAY_H - next_crop_distance[1]
+                    if next_zoom_resolution[0] > 0:
+                        factor = this_zoom_resolution[0] / next_zoom_resolution[0]
+                        updated_x = (event.pos[0] - self.some_pos[0]                    ) * (factor - 1)
+                        updated_y = (event.pos[1] - self.some_pos[1] - STATUS_BAR_HEIGHT) * (factor - 1)
+                        self.some_pos[0] += updated_x
+                        self.some_pos[1] += updated_y
+                        self.zoom += ZOOM_MULTPLIER
+                        self.zoom_level += 1
+                        self._canvas_stuff()
+                
+                elif event.button == 5 and self.zoom > 0:
+                    this_crop_distance =  self.zoom                   * ASPECT_RATIO[0],  self.zoom                   * ASPECT_RATIO[1]
+                    next_crop_distance = (self.zoom - ZOOM_MULTPLIER) * ASPECT_RATIO[0], (self.zoom - ZOOM_MULTPLIER) * ASPECT_RATIO[1]
+                    this_zoom_resolution = DISPLAY_W - this_crop_distance[0], GAME_CANVAS_DISPLAY_H - this_crop_distance[1]
+                    next_zoom_resolution = DISPLAY_W - next_crop_distance[0], GAME_CANVAS_DISPLAY_H - next_crop_distance[1]
+                    factor = this_zoom_resolution[0] / next_zoom_resolution[0]
+                    updated_x = (event.pos[0] - self.some_pos[0]                    ) * (factor - 1)
+                    updated_y = (event.pos[1] - self.some_pos[1] - STATUS_BAR_HEIGHT) * (factor - 1)
+                    self.some_pos[0] += updated_x
+                    self.some_pos[1] += updated_y
+                    self.zoom -= ZOOM_MULTPLIER
+                    self.zoom_level -= 1
+                    self._canvas_stuff()
+            
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 2:
+                    self.held_middle = False
+                    self.some_pos = [self.some_pos[0] - self.delta_mouse_pos[0],
+                                     self.some_pos[1] - self.delta_mouse_pos[1]]
+                    self.origin_mouse_pos = (0, 0)
+                    self.current_mouse_pos = (0, 0)
+                    self.delta_mouse_pos = (0, 0)
+                
     
     def check_reset(self) -> None:
         for event in pygame.event.get():
@@ -68,6 +132,10 @@ class Game:
                 elif event.key == pygame.K_r:
                     self.reset()
                     break
+    
+    def render_game_canvas(self):
+        blit_output = pygame.transform.scale(self.subsurface_game_canvas, (DISPLAY_W, GAME_CANVAS_DISPLAY_H))
+        self.screen.blit(blit_output, (0, STATUS_BAR_HEIGHT))
     
     def render_map(self, time: float=0) -> None:
         self.screen.fill(STATUS_BAR_BG_COLOR)
@@ -92,12 +160,13 @@ class Game:
                 else:
                     color = HIDDEN_TILE_COLOR
                     pygame.draw.rect(self.game_canvas, color, (x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE))
-        self.screen.blit(self.game_canvas, (0, STATUS_BAR_HEIGHT))
         self.screen.blit(self.mine_texture, (DISPLAY_W//2 - self.mine_texture.get_rect().w, 0))
         remaining_mines_status = self.status_font.render(str(N_MINES - self.total_marked), True, MINES_STATUS_COLOR)
         self.screen.blit(remaining_mines_status, (DISPLAY_W//2+20, -20))
         timer_status = self.font.render("time: %d s"%time, True, TIMER_STATUS_COLOR)
         self.screen.blit(timer_status, (8, -2))
+        
+        self.render_game_canvas()
     
     def show_empty_tiles(self, x: int, y: int) -> None:
         if y < 0 or y > HEIGHT or x < 0 or x > WIDTH:
@@ -121,11 +190,12 @@ class Game:
                     self.game_map[a, b] = 29
         self.render_map(perf_counter() - self.start_time)
         pygame.display.flip()
-        x, y = x*TILE_SIZE, y*TILE_SIZE + STATUS_BAR_HEIGHT
+        x, y = x*TILE_SIZE, y*TILE_SIZE
         for i in range(7):
             self.check_events()
-            self.screen.blit(self.explode_animation[i], (x, y))
-            pygame.display.update(x, y, TILE_SIZE, TILE_SIZE)
+            self.game_canvas.blit(self.explode_animation[i], (x, y))
+            self.render_game_canvas()
+            pygame.display.flip()
             self.clock.tick(ANIMATION_SPEED)
         while self.is_running and not self.is_reset:
             self.check_reset()
@@ -138,7 +208,13 @@ class Game:
         self.total_marked: int = 0
         self.is_running: bool = True
         self.is_reset: bool = True
+        self.held_middle: bool = False
         self.no_mine_area: list[tuple[int, int]] = []
+        self.zoom = 0
+        self.zoom_level = 0
+        self.some_pos = [0, 0]
+        self.origin_mouse_pos: tuple[int, int] = (0, 0)
+        self.delta_mouse_pos: tuple[int, int] = (0, 0)
         #-- wait for the first click --#
         while self.is_running:
             self.check_events()
@@ -188,6 +264,16 @@ class Game:
             self.render_map(perf_counter() - self.start_time)
             
             mouse_press = pygame.mouse.get_pressed()
+            if mouse_press[1] and self.held_middle:
+                self.current_mouse_pos = pygame.mouse.get_pos()
+                dx = self.current_mouse_pos[0] - self.origin_mouse_pos[0]
+                dy = self.current_mouse_pos[1] - self.origin_mouse_pos[1]
+                dxr = dx / DISPLAY_W
+                dyr = dy / GAME_CANVAS_DISPLAY_H
+                self.delta_mouse_pos = (dxr*self.subsurface_game_canvas.get_width(),
+                                        dyr*self.subsurface_game_canvas.get_height())
+                self._zoom_stuff()
+            
             if not mouse_press[0] and not mouse_press[2]:
                 released = True
             
@@ -195,8 +281,10 @@ class Game:
                 if mouse_press[0]:
                     released = False
                     mouse_pos = pygame.mouse.get_pos()
-                    y = (mouse_pos[1]-STATUS_BAR_HEIGHT)//TILE_SIZE
-                    x = mouse_pos[0]//TILE_SIZE
+                    
+                    x = int( (( mouse_pos[0]                      / DISPLAY_W            ) * self.subsurface_game_canvas.get_width()  + self.some_pos[0]) / TILE_SIZE )
+                    y = int( (((mouse_pos[1] - STATUS_BAR_HEIGHT) / GAME_CANVAS_DISPLAY_H) * self.subsurface_game_canvas.get_height() + self.some_pos[1]) / TILE_SIZE )
+                    
                     if self.game_map[y, x] == 9:
                         self.explode(x, y)
                     elif self.game_map[y, x] == 0 or self.game_map[y, x] == 10:
@@ -238,8 +326,8 @@ class Game:
                 if mouse_press[2]:
                     released = False
                     mouse_pos = pygame.mouse.get_pos()
-                    y = (mouse_pos[1]-STATUS_BAR_HEIGHT)//TILE_SIZE
-                    x = mouse_pos[0]//TILE_SIZE
+                    x = int( ((mouse_pos[0] / DISPLAY_W) * self.subsurface_game_canvas.get_width()  + self.some_pos[0]) / TILE_SIZE )
+                    y = int( (((mouse_pos[1] - STATUS_BAR_HEIGHT) / GAME_CANVAS_DISPLAY_H) * self.subsurface_game_canvas.get_height() + self.some_pos[1]) / TILE_SIZE )
                     if self.game_map[y, x] == 9 and self.total_marked != N_MINES:
                         self.game_map[y, x] = 19
                         self.true_marked += 1
@@ -266,7 +354,7 @@ class Game:
                 self.render_map(perf_counter() - self.start_time)
                 win_text = self.status_font.render("YOU WON!", True, WIN_MES_COLOR)
                 win_text_rect = win_text.get_rect()
-                self.screen.blit(win_text, (DISPLAY_W//2-win_text_rect.w//2, DISPLAY_H//2-win_text_rect.h//2))
+                self.screen.blit(win_text, (DISPLAY_W//2-win_text_rect.w//2, GAME_CANVAS_DISPLAY_H//2-win_text_rect.h//2))
                 pygame.display.flip()
                 while self.is_running:
                     self.check_reset()

@@ -6,8 +6,12 @@ N_MINES: int = SETTINGS["mines"]
 TILE_SIZE: int = SETTINGS["tile-size"]
 WIDTH: int = SETTINGS["width"]
 HEIGHT: int = SETTINGS["height"]
+STATUS_BAR_HEIGHT = 100
 DISPLAY_W: int = WIDTH * TILE_SIZE
-DISPLAY_H: int = HEIGHT * TILE_SIZE
+GAME_CANVAS_DISPLAY_H: int = HEIGHT * TILE_SIZE
+DISPLAY_H: int = GAME_CANVAS_DISPLAY_H + STATUS_BAR_HEIGHT
+ASPECT_RATIO = (1, 1)
+ZOOM_LIMIT = DISPLAY_W / ASPECT_RATIO[0] - 1
 TFPS: float = SETTINGS["fps"]
 XOFFSET: int = SETTINGS["numbers-x-offset"]
 YOFFSET: int = SETTINGS["numbers-y-offset"]
@@ -17,7 +21,8 @@ FLAG_PATH: str = SETTINGS["flag-path"]
 ANIMATION_PATH: str = SETTINGS["animation-path"]
 ANIMATION_PATH = ANIMATION_PATH.strip("/\\")
 ANIMATION_SPEED: float = SETTINGS["explode-animation-speed"]
-STATUS_BAR_HEIGHT = 100
+
+ZOOM_MULTPLIER: float = SETTINGS["zoom-multiplier"]
 
 HIDDEN_TILE_COLOR: tuple[int, int, int] = tuple(SETTINGS["colors"]["hidden"])
 MARKED_TILE_COLOR: tuple[int, int, int] = tuple(SETTINGS["colors"]["marked"])

@@ -12,6 +12,7 @@
     "animation-path": "assets",
     "explode-animation-speed": 8,
     "smart-click": true,
+    "zoom-multiplier": 14,
     "colors": {
         "hidden": [47, 50, 44],
         "marked": [60, 45, 40],
