@@ -141,6 +141,7 @@ class Game:
                     break
             elif event.type == pygame.MOUSEBUTTONDOWN and self.reset_button_rect.collidepoint(event.pos):
                 self.reset()
+                break
     
     def render_game_canvas(self):
         blit_output = pygame.transform.scale(self.subsurface_game_canvas, (DISPLAY_W, GAME_CANVAS_DISPLAY_H))
@@ -150,8 +151,13 @@ class Game:
         self.screen.fill(STATUS_BAR_BG_COLOR)
         map_left   = int(self.game_canvas_topleft[0] / TILE_SIZE)
         map_top    = int(self.game_canvas_topleft[1] / TILE_SIZE)
-        map_right  = map_left + int(self.subsurface_game_canvas.get_width()  / TILE_SIZE)
-        map_bottom = map_top  + int(self.subsurface_game_canvas.get_height() / TILE_SIZE)
+        map_right  = map_left + int(self.subsurface_game_canvas.get_width()  / TILE_SIZE) + 1
+        map_bottom = map_top  + int(self.subsurface_game_canvas.get_height() / TILE_SIZE) + 1
+        if map_right > WIDTH: map_right = WIDTH
+        if map_bottom > HEIGHT: map_bottom = HEIGHT
+        self.game_canvas_topleft = [self.game_canvas_topleft[0] - self.delta_mouse_pos[0],
+                                    self.game_canvas_topleft[1] - self.delta_mouse_pos[1]]
+        self.origin_mouse_pos = self.current_mouse_pos
         for y in range(map_top, map_bottom):
             for x in range(map_left, map_right):
                 if self.game_map[y, x] == 10:
@@ -236,6 +242,7 @@ class Game:
         self.game_canvas_topleft = [0, 0]
         self.origin_mouse_pos: tuple[int, int] = (0, 0)
         self.delta_mouse_pos: tuple[int, int] = (0, 0)
+        self.current_mouse_pos: tuple[int, int] = (0, 0)
         self._canvas_stuff()
         #-- wait for the first click --#
         while self.is_running:
@@ -307,6 +314,7 @@ class Game:
                     if mouse_pos[1] < STATUS_BAR_HEIGHT:
                         if self.reset_button_rect.collidepoint(mouse_pos):
                             self.reset()
+                            self.is_reset = False
                     
                     else:
                         x = int( (( mouse_pos[0]                      / DISPLAY_W            ) * self.subsurface_game_canvas.get_width()  + self.game_canvas_topleft[0]) / TILE_SIZE )
